@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · AegisVault{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<p class="muted dashboard-intro">Welcome back, {{ user.username }}. Here's the current state of your vault.</p>
+
+<div class="panel-grid">
+
+    <!-- Security Overview -->
+    <div class="col-6">
+        <div class="card">
+            <h2>Security Overview</h2>
+            <div class="gauge-row">
+                <svg class="gauge-svg" width="110" height="110" viewBox="0 0 110 110">
+                    <circle class="gauge-track" cx="55" cy="55" r="{{ gauge.radius }}" stroke-width="9"/>
+                    <circle class="gauge-value" cx="55" cy="55" r="{{ gauge.radius }}" stroke-width="9"
+                            stroke="{{ gauge.color }}"
+                            stroke-dasharray="{{ gauge.filled }} {{ gauge.circumference }}"
+                            transform="rotate(-90 55 55)"/>
+                    <text x="55" y="52" text-anchor="middle" class="gauge-center-value">{{ security.score }}%</text>
+                    <text x="55" y="67" text-anchor="middle" class="gauge-center-label">SCORE</text>
+                </svg>
+                <div>
+                    <div class="gauge-status-label status-text-{{ gauge.level }}">{{ security.label }}</div>
+                    <p class="gauge-desc">Account security score, based on your recent login activity and lockout status.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Encrypted Files -->
+    <div class="col-6">
+        <div class="card">
+            <h2>Encrypted Files</h2>
+            <div class="stats-row no-margin">
+                <div class="stat-card">
+                    <div class="stat-value">{{ file_count }}</div>
+                    <div class="stat-label">Total files</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ "%.2f"|format(total_bytes / 1024 / 1024) }} MB</div>
+                    <div class="stat-label">Storage used</div>
+                </div>
+            </div>
+            <div class="encryption-chip encryption-chip-spaced">AES-256-GCM &middot; every file, every time</div>
+        </div>
+    </div>
+
+    <!-- Quick upload (kept compact -- full management lives on My Files) -->
+    <div class="col-12">
+        <div class="card">
+            <h2>Upload a file</h2>
+            <form method="post" action="{{ url_for('files.upload') }}" enctype="multipart/form-data" class="upload-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="next" value="{{ url_for('dashboard.index') }}">
+                <input type="file" name="file" required>
+                <button type="submit" class="btn-primary">Upload &amp; encrypt</button>
+            </form>
+            <p class="card-note card-note-block">Files are encrypted with AES-256-GCM before they touch disk. <a href="{{ url_for('files.index') }}">Manage all files &rarr;</a></p>
+        </div>
+    </div>
+
+    <!-- File Activity -->
+    <div class="col-8">
+        <div class="card">
+            <h2>File Activity <span class="card-note">last 7 days</span></h2>
+            <div class="chart-legend">
+                <div class="chart-legend-item"><span class="chart-legend-dot dot-accent"></span>Uploads</div>
+                <div class="chart-legend-item"><span class="chart-legend-dot dot-success"></span>Downloads</div>
+                <div class="chart-legend-item"><span class="chart-legend-dot dot-warning"></span>Deletes</div>
+            </div>
+            {% if chart.has_activity %}
+            <svg class="chart-svg" viewBox="0 0 {{ chart.width }} {{ chart.height }}" preserveAspectRatio="none">
+                <line x1="0" y1="{{ chart.baseline_y }}" x2="{{ chart.width }}" y2="{{ chart.baseline_y }}" class="chart-grid-line"/>
+                <polyline points="{{ chart.upload_points }}" class="chart-glow chart-accent"/>
+                <polyline points="{{ chart.upload_points }}" class="chart-line chart-accent"/>
+                <polyline points="{{ chart.download_points }}" class="chart-glow chart-success"/>
+                <polyline points="{{ chart.download_points }}" class="chart-line chart-success"/>
+                <polyline points="{{ chart.delete_points }}" class="chart-glow chart-warning"/>
+                <polyline points="{{ chart.delete_points }}" class="chart-line chart-warning"/>
+                {% for label in chart.labels %}
+                <text x="{{ label.x }}" y="{{ chart.height - 4 }}" class="chart-axis-label" text-anchor="middle">{{ label.text }}</text>
+                {% endfor %}
+            </svg>
+            {% else %}
+                <div class="empty-state">No file activity in the last 7 days yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Security Activity -->
+    <div class="col-4">
+        <div class="card">
+            <h2>Security Activity</h2>
+            {% if recent_activity %}
+            <div class="timeline">
+                {% for entry in recent_activity %}
+                <div class="timeline-item">
+                    <span class="timeline-dot {{ 'ok' if entry.success else 'fail' }}"></span>
+                    <div class="timeline-body">
+                        <div class="timeline-title">{{ entry.action.replace('_', ' ')|capitalize }}</div>
+                        <div class="timeline-time mono">{{ entry.timestamp[:19].replace("T", " ") }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                <div class="empty-state">No activity recorded yet.</div>
+            {% endif %}
+            <p class="card-note card-note-block"><a href="{{ url_for('dashboard.activity') }}">View full activity &rarr;</a></p>
+        </div>
+    </div>
+
+    <!-- System Security -->
+    <div class="col-4">
+        <div class="card">
+            <h2>System Security</h2>
+            {% for control in system_security %}
+            <div class="control-row">
+                <div>
+                    <div class="control-row-name">{{ control.name }}</div>
+                    <div class="control-row-detail">{{ control.detail }}</div>
+                </div>
+                <span class="status-pill ok">{{ control.status }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Files -->
+    <div class="col-8">
+        <div class="card">
+            <h2>Recent Files</h2>
+            {% if files %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Encryption</th><th>Date</th><th>Action</th></tr></thead>
+                <tbody>
+                {% for f in files %}
+                    <tr>
+                        <td class="wrap">
+                            <div class="file-name-cell">
+                                <span class="file-type-icon">{{ (f.original_filename.split('.')[-1] if '.' in f.original_filename else '?')[:3] }}</span>
+                                {{ f.original_filename }}
+                            </div>
+                        </td>
+                        <td class="mono">{{ f.mime_type }}</td>
+                        <td class="mono">{{ "%.1f"|format(f.size_bytes / 1024) }} KB</td>
+                        <td><span class="encryption-chip">AES-256-GCM</span></td>
+                        <td class="mono">{{ f.created_at[:10] }}</td>
+                        <td class="file-actions">
+                            <a class="btn-small" href="{{ url_for('files.download', file_id=f.id) }}">Download</a>
+                            <form method="post" action="{{ url_for('files.delete', file_id=f.id) }}" class="inline-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="next" value="{{ url_for('dashboard.index') }}">
+                                <button type="button" class="btn-small btn-danger delete-trigger" data-confirm-label="{{ f.original_filename }}">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No files yet. Upload your first file above — it'll be encrypted automatically.</div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

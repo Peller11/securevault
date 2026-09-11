@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Security · AegisVault{% endblock %}
+{% block page_title %}Security{% endblock %}
+{% block content %}
+
+<div class="panel-grid">
+
+    <div class="col-6">
+        <div class="card">
+            <h2>Account Security Score</h2>
+            <div class="gauge-row">
+                <svg class="gauge-svg" width="110" height="110" viewBox="0 0 110 110">
+                    <circle class="gauge-track" cx="55" cy="55" r="{{ gauge.radius }}" stroke-width="9"/>
+                    <circle class="gauge-value" cx="55" cy="55" r="{{ gauge.radius }}" stroke-width="9"
+                            stroke="{{ gauge.color }}"
+                            stroke-dasharray="{{ gauge.filled }} {{ gauge.circumference }}"
+                            transform="rotate(-90 55 55)"/>
+                    <text x="55" y="52" text-anchor="middle" class="gauge-center-value">{{ security.score }}%</text>
+                    <text x="55" y="67" text-anchor="middle" class="gauge-center-label">SCORE</text>
+                </svg>
+                <div>
+                    <div class="gauge-status-label status-text-{{ gauge.level }}">{{ security.label }}</div>
+                    <p class="gauge-desc">Derived from your account's current lockout state and recent failed-login count — not a system-wide claim.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Account status</h2>
+            <div class="control-row">
+                <div class="control-row-name">Account lock</div>
+                {% if is_locked %}
+                    <span class="status-pill fail">Locked</span>
+                {% else %}
+                    <span class="status-pill ok">Active</span>
+                {% endif %}
+            </div>
+            <div class="control-row">
+                <div class="control-row-name">Recent failed logins</div>
+                <span class="status-pill {{ 'warn' if failed_login_count else 'ok' }}">{{ failed_login_count }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6">
+        <div class="card">
+            <h2>System Security</h2>
+            {% for control in system_security %}
+            <div class="control-row">
+                <div>
+                    <div class="control-row-name">{{ control.name }}</div>
+                    <div class="control-row-detail">{{ control.detail }}</div>
+                </div>
+                <span class="status-pill ok">{{ control.status }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <h2>Recent failed logins on this account</h2>
+            {% if recent_failed %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>IP address</th><th>Time</th></tr></thead>
+                <tbody>
+                {% for entry in recent_failed %}
+                    <tr>
+                        <td class="mono">{{ entry.ip_address }}</td>
+                        <td class="mono">{{ entry.timestamp[:19].replace("T", " ") }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No failed login attempts recorded for your account.</div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

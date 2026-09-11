@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AegisVault{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="auth-shell">
+        <div class="auth-brand-panel">
+            <div class="auth-brand-mark">
+                <span class="mark">AV</span>
+                <span class="name">AegisVault</span>
+            </div>
+            <p class="auth-tagline">Secure File Intelligence</p>
+
+            <ul class="auth-feature-list">
+                <li>
+                    <span class="icon">
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6.2l2.6 2.6L10 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    Files encrypted at rest with AES-256-GCM
+                </li>
+                <li>
+                    <span class="icon">
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6.2l2.6 2.6L10 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    Passwords hashed with Argon2id, never stored in plaintext
+                </li>
+                <li>
+                    <span class="icon">
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6.2l2.6 2.6L10 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    Every access attempt is authenticated, authorized, and logged
+                </li>
+            </ul>
+
+            <p class="auth-security-note">Your files are encrypted and protected by AegisVault security controls.</p>
+        </div>
+
+        <div class="auth-form-panel">
+            <div class="auth-form-card">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-container">
+                            {% for category, message in messages %}
+                                <div class="flash flash-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

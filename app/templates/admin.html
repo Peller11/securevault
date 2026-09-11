@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}Admin console · AegisVault{% endblock %}
+{% block page_title %}Admin console{% endblock %}
+{% block content %}
+
+<div class="admin-header">
+    <div>
+        <div class="admin-eyebrow">Security Operations</div>
+    </div>
+    <div class="status-indicator" title="Encryption, CSRF protection, rate limiting, and audit logging are all active">
+        <span class="pulse-dot"></span>
+        System operational
+    </div>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card"><div class="stat-value">{{ stats.user_count }}</div><div class="stat-label">Registered users</div></div>
+    <div class="stat-card"><div class="stat-value">{{ stats.file_count }}</div><div class="stat-label">Files stored (all users)</div></div>
+    <div class="stat-card"><div class="stat-value">{{ "%.2f"|format(stats.total_storage_bytes / 1024 / 1024) }} MB</div><div class="stat-label">Total storage used</div></div>
+</div>
+
+<div class="card">
+    <p class="muted">Admins can see security metadata below but cannot decrypt or download any user's private files. That boundary is enforced in code, not just policy.</p>
+</div>
+
+<div class="tabs" role="tablist">
+    <button type="button" class="tab-btn active" data-tab="users">Users</button>
+    <button type="button" class="tab-btn" data-tab="security-events">Security Events</button>
+    <button type="button" class="tab-btn" data-tab="login-attempts">Login Attempts</button>
+    <button type="button" class="tab-btn" data-tab="file-stats">File Statistics</button>
+    <button type="button" class="tab-btn" data-tab="system-activity">System Activity</button>
+</div>
+
+<div class="tab-panels">
+
+    <!-- ===================== Users ===================== -->
+    <section class="tab-panel active" id="tab-users">
+        <div class="card">
+            <h2>Registered users</h2>
+            {% if users %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Files</th><th>Storage</th><th>Joined</th></tr></thead>
+                <tbody>
+                {% for u in users %}
+                    <tr>
+                        <td>{{ u.username }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>{% if u.role == 'admin' %}<span class="badge">admin</span>{% else %}user{% endif %}</td>
+                        <td>
+                            {% if u.is_locked %}
+                                <span class="status-pill fail">locked</span>
+                            {% else %}
+                                <span class="status-pill ok">active</span>
+                            {% endif %}
+                        </td>
+                        <td class="mono">{{ u.file_count }}</td>
+                        <td class="mono">{{ "%.1f"|format(u.storage_bytes / 1024) }} KB</td>
+                        <td class="mono">{{ u.created_at[:19].replace("T", " ") }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No users registered yet.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ================= Security Events ================= -->
+    <section class="tab-panel" id="tab-security-events">
+        <div class="card">
+            <h2>Suspicious IPs <span class="card-note">5+ failed logins</span></h2>
+            {% if suspicious_ips %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>IP address</th><th>Failed attempts</th><th>Last seen</th></tr></thead>
+                <tbody>
+                {% for row in suspicious_ips %}
+                    <tr>
+                        <td class="mono">{{ row.ip_address }}</td>
+                        <td><span class="status-pill warn">{{ row.failure_count }}</span></td>
+                        <td class="mono">{{ row.last_seen[:19].replace("T", " ") }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No suspicious activity detected.</div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Recent failed logins</h2>
+            {% if failed_attempts %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Username</th><th>IP address</th><th>Time</th></tr></thead>
+                <tbody>
+                {% for a in failed_attempts %}
+                    <tr>
+                        <td>{{ a.username_attempted }}</td>
+                        <td class="mono">{{ a.ip_address }}</td>
+                        <td class="mono">{{ a.timestamp[:19].replace("T", " ") }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No failed logins recorded.</div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Login &amp; unauthorized-access events</h2>
+            {% if security_events %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>User</th><th>Event</th><th>Resource</th><th>IP</th><th>Result</th><th>Time</th></tr></thead>
+                <tbody>
+                {% for log in security_events %}
+                    <tr>
+                        <td>{{ log.username or "—" }}</td>
+                        <td>{{ log.action }}</td>
+                        <td class="mono">{{ log.resource_id or "—" }}</td>
+                        <td class="mono">{{ log.ip_address }}</td>
+                        <td><span class="status-pill {{ 'ok' if log.success else 'fail' }}">{{ "success" if log.success else "failed" }}</span></td>
+                        <td class="mono">{{ log.timestamp[:19].replace("T", " ") }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No security events recorded.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ================= Login Attempts ================= -->
+    <section class="tab-panel" id="tab-login-attempts">
+        <div class="card">
+            <h2>All login attempts</h2>
+            {% if recent_attempts %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Username</th><th>IP address</th><th>Result</th><th>Time</th></tr></thead>
+                <tbody>
+                {% for a in recent_attempts %}
+                    <tr>
+                        <td>{{ a.username_attempted }}</td>
+                        <td class="mono">{{ a.ip_address }}</td>
+                        <td><span class="status-pill {{ 'ok' if a.success else 'fail' }}">{{ "success" if a.success else "failed" }}</span></td>
+                        <td class="mono">{{ a.timestamp[:19].replace("T", " ") }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No login attempts recorded yet.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ================= File Statistics ================= -->
+    <section class="tab-panel" id="tab-file-stats">
+        <div class="card">
+            <h2>Files by type</h2>
+            {% if file_type_bars %}
+            <svg class="chart-svg bar-chart-svg" viewBox="0 0 {{ bar_chart_width + 90 }} {{ file_type_bars|length * 28 + 8 }}">
+                {% for bar in file_type_bars %}
+                <text x="0" y="{{ loop.index0 * 28 + 14 }}" class="bar-chart-label mono">{{ bar.label }}</text>
+                <rect x="82" y="{{ loop.index0 * 28 + 4 }}" width="{{ bar.width }}" height="14" rx="3" class="bar-chart-fill"/>
+                <text x="{{ 82 + (bar.width|float) + 8 }}" y="{{ loop.index0 * 28 + 14 }}" class="bar-chart-count mono">{{ bar.count }}</text>
+                {% endfor %}
+            </svg>
+            {% else %}
+                <div class="empty-state">No files uploaded yet.</div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Breakdown by file type</h2>
+            {% if file_type_breakdown %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>MIME type</th><th>Files</th><th>Total size</th></tr></thead>
+                <tbody>
+                {% for row in file_type_breakdown %}
+                    <tr>
+                        <td class="mono">{{ row.mime_type }}</td>
+                        <td class="mono">{{ row.count }}</td>
+                        <td class="mono">{{ "%.1f"|format(row.total_bytes / 1024) }} KB</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No files uploaded yet.</div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Largest files <span class="card-note">metadata only — contents are never exposed here</span></h2>
+            {% if largest_files %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Name</th><th>Owner</th><th>Size</th><th>Uploaded</th></tr></thead>
+                <tbody>
+                {% for f in largest_files %}
+                    <tr>
+                        <td class="wrap">{{ f.original_filename }}</td>
+                        <td>{{ f.username }}</td>
+                        <td class="mono">{{ "%.1f"|format(f.size_bytes / 1024) }} KB</td>
+                        <td class="mono">{{ f.created_at[:19].replace("T", " ") }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No files uploaded yet.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ================= System Activity ================= -->
+    <section class="tab-panel" id="tab-system-activity">
+        <div class="card">
+            <h2>Audit log <span class="card-note">complete, unfiltered activity trail</span></h2>
+            {% if audit_logs %}
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>User</th><th>Action</th><th>Resource</th><th>IP</th><th>Result</th><th>Time</th></tr></thead>
+                <tbody>
+                {% for log in audit_logs %}
+                    <tr>
+                        <td>{{ log.username or "—" }}</td>
+                        <td>{{ log.action }}</td>
+                        <td class="mono">{{ log.resource_id or "—" }}</td>
+                        <td class="mono">{{ log.ip_address }}</td>
+                        <td><span class="status-pill {{ 'ok' if log.success else 'fail' }}">{{ "success" if log.success else "failed" }}</span></td>
+                        <td class="mono">{{ log.timestamp[:19].replace("T", " ") }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+                <div class="empty-state">No activity recorded yet.</div>
+            {% endif %}
+        </div>
+    </section>
+
+</div>
+
+{% endblock %}

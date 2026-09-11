@@ -1,0 +1,17 @@
+{% extends "auth_layout.html" %}
+{% block title %}Sign in · AegisVault{% endblock %}
+{% block content %}
+<h1>Log in</h1>
+<p class="subhead">Access your encrypted vault.</p>
+<form method="post" action="{{ url_for('auth.login') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" value="{{ username }}" autocomplete="username" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required>
+
+    <button type="submit" class="btn-primary">Sign in</button>
+</form>
+<p class="muted auth-footer-note">No account yet? <a href="{{ url_for('auth.register') }}">Register</a></p>
+{% endblock %}

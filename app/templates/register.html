@@ -1,0 +1,23 @@
+{% extends "auth_layout.html" %}
+{% block title %}Create account · AegisVault{% endblock %}
+{% block content %}
+<h1>Create your account</h1>
+<p class="subhead">Set up encrypted storage in under a minute.</p>
+<form method="post" action="{{ url_for('auth.register') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" value="{{ username }}" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_]+">
+
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" value="{{ email }}" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required minlength="10" autocomplete="new-password">
+
+    <label for="confirm_password">Confirm password</label>
+    <input type="password" id="confirm_password" name="confirm_password" required minlength="10" autocomplete="new-password">
+
+    <button type="submit" class="btn-primary">Create account</button>
+</form>
+<p class="muted auth-footer-note">Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Activity · AegisVault{% endblock %}
+{% block page_title %}Activity{% endblock %}
+{% block content %}
+
+<div class="card">
+    <h2>Your activity</h2>
+    {% if logs %}
+    <div class="timeline">
+        {% for entry in logs %}
+        <div class="timeline-item">
+            <span class="timeline-dot {{ 'ok' if entry.success else 'fail' }}"></span>
+            <div class="timeline-body">
+                <div class="timeline-title">
+                    {{ entry.action.replace('_', ' ')|capitalize }}
+                    {% if entry.resource_id %}<span class="card-note">resource #{{ entry.resource_id }}</span>{% endif %}
+                </div>
+                <div class="timeline-time mono">{{ entry.ip_address }} &middot; {{ entry.timestamp[:19].replace("T", " ") }}</div>
+            </div>
+            <span class="status-pill {{ 'ok' if entry.success else 'fail' }}">{{ "success" if entry.success else "failed" }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        <div class="empty-state">No activity recorded yet.</div>
+    {% endif %}
+</div>
+
+{% endblock %}

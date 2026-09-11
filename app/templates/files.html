@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}My Files · AegisVault{% endblock %}
+{% block page_title %}My Files{% endblock %}
+{% block content %}
+
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-value">{{ file_count }}</div>
+        <div class="stat-label">Total files</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ "%.2f"|format(total_bytes / 1024 / 1024) }} MB</div>
+        <div class="stat-label">Storage used</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Upload a file</h2>
+    <form method="post" action="{{ url_for('files.upload') }}" enctype="multipart/form-data" class="upload-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ url_for('files.index') }}">
+        <input type="file" name="file" required>
+        <button type="submit" class="btn-primary">Upload &amp; encrypt</button>
+    </form>
+    <p class="card-note card-note-block">Files are encrypted with AES-256-GCM before they touch disk.</p>
+</div>
+
+<div class="card">
+    <div class="filter-row">
+        <div class="topbar-search">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <input type="text" placeholder="Filter your files..." data-search-input aria-label="Filter files">
+        </div>
+        <button type="button" class="filter-chip active" data-filter="all">All types</button>
+        {% for ext in file_extensions %}
+        <button type="button" class="filter-chip" data-filter="{{ ext }}">{{ ext|upper }}</button>
+        {% endfor %}
+    </div>
+
+    {% if files %}
+    <div class="table-wrap">
+    <table class="data-table" data-searchable-table>
+        <thead>
+            <tr><th>File</th><th>Type</th><th>Size</th><th>Encryption</th><th>Uploaded</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for f in files %}
+            {% set ext = (f.original_filename.split('.')[-1] if '.' in f.original_filename else '') %}
+            <tr data-file-type="{{ ext }}">
+                <td class="wrap">
+                    <div class="file-name-cell">
+                        <span class="file-type-icon">{{ (ext or '?')[:3] }}</span>
+                        {{ f.original_filename }}
+                    </div>
+                </td>
+                <td class="mono">{{ f.mime_type }}</td>
+                <td class="mono">{{ "%.1f"|format(f.size_bytes / 1024) }} KB</td>
+                <td><span class="encryption-chip">AES-256-GCM</span></td>
+                <td class="mono">{{ f.created_at[:19].replace("T", " ") }}</td>
+                <td class="file-actions">
+                    <a class="btn-small" href="{{ url_for('files.download', file_id=f.id) }}">Download</a>
+                    <form method="post" action="{{ url_for('files.delete', file_id=f.id) }}" class="inline-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="next" value="{{ url_for('files.index') }}">
+                        <button type="button" class="btn-small btn-danger delete-trigger" data-confirm-label="{{ f.original_filename }}">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+        <div class="empty-state">No files yet. Upload your first file above — it'll be encrypted automatically.</div>
+    {% endif %}
+</div>
+
+{% endblock %}

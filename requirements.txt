@@ -1,0 +1,13 @@
+# SecureVault runs on Flask + the `cryptography` library only.
+#
+# Deliberately NOT used: Flask-SQLAlchemy, Flask-Login, Flask-WTF,
+# Flask-Limiter, argon2-cffi, bcrypt, python-magic. Their functionality
+# (session auth, CSRF tokens, rate limiting, Argon2id hashing, file-type
+# sniffing) is implemented directly on top of Flask's session support,
+# the Python standard library (sqlite3, secrets, hmac), and
+# `cryptography`'s built-in Argon2id KDF and AESGCM primitives. This
+# keeps the dependency surface small and every security-relevant code
+# path auditable in this repository rather than hidden in a third-party
+# package.
+Flask>=3.0
+cryptography>=42.0
