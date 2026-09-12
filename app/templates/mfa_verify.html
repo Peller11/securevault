@@ -1,0 +1,13 @@
+{% extends "auth_layout.html" %}
+{% block title %}MFA verification · AegisVault{% endblock %}
+{% block content %}
+<h1>Verify your identity</h1>
+<p class="subhead">Enter the 6-digit code from your authenticator app, or use a recovery code.</p>
+<form method="post" action="{{ url_for('auth.mfa_verify') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="code">Authentication code</label>
+    <input type="text" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus>
+    <button type="submit" class="btn-primary">Verify</button>
+</form>
+<p class="muted auth-footer-note">Signing in as {{ username }}.</p>
+{% endblock %}

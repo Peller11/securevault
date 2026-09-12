@@ -55,6 +55,40 @@
             </div>
             {% endfor %}
         </div>
+
+        <div class="card" id="mfa-controls">
+            <h2>Multi-Factor Authentication</h2>
+            {% if user.mfa_enabled %}
+                <div class="control-row">
+                    <div class="control-row-name">Status</div>
+                    <span class="status-pill ok">Enabled</span>
+                </div>
+                <p class="muted">Authenticator verification is required after your password.</p>
+                <a class="btn-secondary" href="#mfa-controls">Manage MFA</a>
+                <form method="post" action="{{ url_for('auth.regenerate_recovery_codes') }}" class="mfa-action-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label for="regen-password">Current password</label>
+                    <input type="password" id="regen-password" name="password" required autocomplete="current-password">
+                    <label for="regen-code">Authenticator or recovery code</label>
+                    <input type="text" id="regen-code" name="code" required inputmode="numeric">
+                    <button type="submit" class="btn-secondary">Regenerate Recovery Codes</button>
+                </form>
+                <form method="post" action="{{ url_for('auth.disable_mfa') }}" class="mfa-action-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label for="disable-password">Current password</label>
+                    <input type="password" id="disable-password" name="password" required autocomplete="current-password">
+                    <label for="disable-code">Authenticator or recovery code</label>
+                    <input type="text" id="disable-code" name="code" required inputmode="numeric">
+                    <button type="submit" class="btn-danger btn-secondary">Disable MFA</button>
+                </form>
+            {% else %}
+                <div class="control-row">
+                    <div class="control-row-name">Status</div>
+                    <span class="status-pill warn">Disabled</span>
+                </div>
+                <a class="btn-primary" href="{{ url_for('auth.mfa_setup') }}">Manage MFA</a>
+            {% endif %}
+        </div>
     </div>
 
     <div class="col-12">

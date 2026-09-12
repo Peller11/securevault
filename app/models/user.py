@@ -55,3 +55,11 @@ def list_all_users(db):
     security dashboard -- never exposes password_hash to templates
     (templates simply don't reference that column)."""
     return db.execute("SELECT * FROM users ORDER BY created_at DESC").fetchall()
+
+
+def set_mfa_secret(db, *, user_id: int, secret: str | None, enabled: bool):
+    db.execute(
+        "UPDATE users SET mfa_secret = ?, mfa_enabled = ? WHERE id = ?",
+        (secret, 1 if enabled else 0, user_id),
+    )
+    db.commit()

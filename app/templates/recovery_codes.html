@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Recovery codes · AegisVault{% endblock %}
+{% block page_title %}Recovery codes{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>New recovery codes</h2>
+    <p class="muted">These codes are shown once. Store them securely; previous codes are no longer valid.</p>
+    <div class="recovery-codes">{% for code in recovery_codes %}<code>{{ code }}</code>{% endfor %}</div>
+    <a class="btn-secondary" href="{{ url_for('dashboard.security') }}">Return to Security</a>
+</div>
+{% endblock %}

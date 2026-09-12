@@ -26,6 +26,7 @@ from flask import session, g, current_app, redirect, url_for, request, abort, fl
 from app.db import get_db
 from app.models import user as user_model
 from app.models import login_attempt as login_attempt_model
+from app.models import mfa as mfa_model
 
 
 def _now_iso() -> str:
@@ -46,6 +47,33 @@ def login_user(user_row) -> None:
     session["user_id"] = user_row["id"]
     session["role"] = user_row["role"]
     session["username"] = user_row["username"]
+
+
+def begin_mfa(user_row) -> None:
+    session.clear()
+    session.permanent = True
+    session["mfa_user_id"] = user_row["id"]
+
+
+def pending_mfa_user():
+    user_id = session.get("mfa_user_id")
+    if user_id is None:
+        return None
+    return user_model.get_user_by_id(get_db(), user_id)
+
+
+def clear_pending_mfa() -> None:
+    session.pop("mfa_user_id", None)
+
+
+def mfa_rate_limited(db, *, user_id: int, ip_address: str) -> bool:
+    cfg = current_app.config
+    since = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(
+        minutes=cfg["MFA_RATE_LIMIT_WINDOW_MINUTES"]
+    )).isoformat()
+    return mfa_model.count_recent_failures(
+        db, user_id=user_id, ip_address=ip_address, since_iso=since
+    ) >= cfg["MFA_RATE_LIMIT_ATTEMPTS"]
 
 
 def logout_user() -> None:

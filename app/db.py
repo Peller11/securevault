@@ -29,7 +29,9 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash       TEXT NOT NULL,
     role                TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     failed_login_count  INTEGER NOT NULL DEFAULT 0,
-    locked_until        TEXT,
+        locked_until        TEXT,
+        mfa_secret         TEXT,
+        mfa_enabled        INTEGER NOT NULL DEFAULT 0,
     created_at          TEXT NOT NULL
 );
 
@@ -67,6 +69,24 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip_address, timestamp);
 CREATE INDEX IF NOT EXISTS idx_login_attempts_username ON login_attempts(username_attempted, timestamp);
+
+CREATE TABLE IF NOT EXISTS recovery_codes (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id             INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash           TEXT NOT NULL,
+    used_at             TEXT,
+    created_at          TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_recovery_codes_user_id ON recovery_codes(user_id);
+
+CREATE TABLE IF NOT EXISTS mfa_attempts (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id             INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    ip_address          TEXT NOT NULL,
+    timestamp           TEXT NOT NULL,
+    success             INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_mfa_attempts_rate ON mfa_attempts(user_id, ip_address, timestamp);
 """
 
 
@@ -92,6 +112,11 @@ def init_db(app):
     with app.app_context():
         db = get_db()
         db.executescript(SCHEMA)
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(users)").fetchall()}
+        if "mfa_secret" not in columns:
+            db.execute("ALTER TABLE users ADD COLUMN mfa_secret TEXT")
+        if "mfa_enabled" not in columns:
+            db.execute("ALTER TABLE users ADD COLUMN mfa_enabled INTEGER NOT NULL DEFAULT 0")
         db.commit()
 
 

@@ -63,6 +63,11 @@ class Config:
     IP_RATE_LIMIT_WINDOW_MINUTES = int(
         os.environ.get("SECUREVAULT_IP_RATE_LIMIT_WINDOW_MINUTES", "5")
     )
+    MFA_RATE_LIMIT_ATTEMPTS = int(os.environ.get("SECUREVAULT_MFA_RATE_LIMIT_ATTEMPTS", "5"))
+    MFA_RATE_LIMIT_WINDOW_MINUTES = int(
+        os.environ.get("SECUREVAULT_MFA_RATE_LIMIT_WINDOW_MINUTES", "5")
+    )
+    MFA_RECOVERY_CODE_COUNT = 10
 
     # --- Argon2id parameters ------------------------------------------
     ARGON2_TIME_COST = int(os.environ.get("SECUREVAULT_ARGON2_TIME_COST", "3"))

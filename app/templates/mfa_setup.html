@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Set up MFA · AegisVault{% endblock %}
+{% block page_title %}Set up MFA{% endblock %}
+{% block content %}
+<div class="card mfa-card">
+    {% if enabled %}
+        <h2>Multi-Factor Authentication enabled</h2>
+        <p class="muted">Store these recovery codes somewhere secure. They will not be shown again.</p>
+        <div class="recovery-codes">{% for code in recovery_codes %}<code>{{ code }}</code>{% endfor %}</div>
+        <a class="btn-secondary" href="{{ url_for('dashboard.security') }}">Return to Security</a>
+    {% else %}
+        <h2>Scan the QR code</h2>
+        <p class="muted">Add AegisVault to your authenticator app, then confirm the current code.</p>
+        <img class="mfa-qr" src="{{ qr_data_uri }}" alt="AegisVault authenticator setup QR code">
+        <p>Manual setup key: <code class="mono">{{ secret }}</code></p>
+        <form method="post" action="{{ url_for('auth.mfa_setup') }}" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="code">6-digit authenticator code</label>
+            <input type="text" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" required>
+            <button type="submit" class="btn-primary">Enable MFA</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

@@ -20,6 +20,11 @@ ACTION_UPLOAD = "file_upload"
 ACTION_DOWNLOAD = "file_download"
 ACTION_DELETE = "file_delete"
 ACTION_UNAUTHORIZED = "unauthorized_access_attempt"
+ACTION_MFA_ENABLED = "mfa_enabled"
+ACTION_MFA_VERIFY = "mfa_verification"
+ACTION_MFA_RECOVERY_USED = "mfa_recovery_code_used"
+ACTION_MFA_RECOVERY_REGENERATED = "mfa_recovery_codes_regenerated"
+ACTION_MFA_DISABLED = "mfa_disabled"
 
 
 def log_action(*, user_id, action: str, ip_address: str, success: bool, resource_id=None, db=None):
